@@ -1,33 +1,17 @@
-from sqlalchemy import Column, Integer, String, Float, JSON
+from sqlalchemy import Column, Integer, String, Float, DateTime
+from datetime import datetime
 from database import Base
 
-class User(Base):
-    __tablename__ = "users"
+class AIHistory(Base):
+    __tablename__ = "ai_history"
 
     id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, index=True)
-    password = Column(String)
-    role = Column(String)  # admin / operator / user
 
+    animal = Column(String, nullable=False)
+    goal = Column(String, nullable=False)
 
-class Ration(Base):
-    __tablename__ = "rations"
+    score = Column(Float, nullable=False)
 
-    id = Column(Integer, primary_key=True, index=True)
-    animal = Column(String)
-    age = Column(Integer)
-    goal = Column(String)
-    data = Column(JSON)
-    class Farm(Base):
-    __tablename__ = "farms"
+    ingredients = Column(String)
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String)
-    owner_phone = Column(String)
-    class ConsumptionLog(Base):
-    __tablename__ = "consumption_logs"
-
-    id = Column(Integer, primary_key=True, index=True)
-    farm_id = Column(Integer)
-    date = Column(String)
-    data = Column(JSON)
+    timestamp = Column(DateTime, default=datetime.utcnow)
