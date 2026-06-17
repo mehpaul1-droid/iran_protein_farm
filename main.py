@@ -1,4 +1,5 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 
@@ -7,65 +8,55 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# -----------------------------
-# Request Schema
-# -----------------------------
+# ---------------- CORS ----------------
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # در production بعداً محدودش می‌کنیم
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ---------------- REQUEST MODEL ----------------
 class FeedRequest(BaseModel):
     animal: str
     age: int
     goal: str
     available: Optional[List[str]] = []
 
-# -----------------------------
-# Root
-# -----------------------------
+# ---------------- ROOT ----------------
 @app.get("/")
 def root():
     return {
         "status": "ok",
-        "message": "Farm AI API is running"
+        "message": "Industrial AI API Running"
     }
 
-# -----------------------------
-# AI Optimization Endpoint
-# -----------------------------
+# ---------------- AI OPTIMIZE ----------------
 @app.post("/ai/optimize-ration")
 def optimize_ration(req: FeedRequest):
+    try:
+        # 🔥 نسخه ساده AI (فعلاً rule-based)
+        base_score = 100
 
-    # -----------------------------
-    # Simple AI logic (demo version)
-    # -----------------------------
-    base = {
-        "corn": 40,
-        "soybean_meal": 30,
-        "wheat_bran": 15,
-        "barley": 10,
-        "minerals_vitamins": 3,
-        "oil": 2
-    }
+        if req.animal.lower() == "chicken":
+            base_score += 10
 
-    # Adjust based on age
-    if req.age < 10:
-        base["soybean_meal"] += 5
-        base["corn"] -= 5
+        if req.age > 20:
+            base_score -= 5
 
-    # Goal adjustment
-    if req.goal == "growth":
-        base["soybean_meal"] += 3
-        base["corn"] += 2
+        if "soybean_meal" in req.available:
+            base_score += 15
 
-    if req.goal == "cost":
-        base["corn"] += 5
-        base["soybean_meal"] -= 5
+        result = {
+            "animal": req.animal,
+            "goal": req.goal,
+            "score": base_score,
+            "recommendation": "Balanced high-protein feed recommended",
+            "ingredients": req.available
+        }
 
-    # Available ingredients filter
-    if req.available:
-        base = {k: v for k, v in base.items() if k in req.available}
+        return result
 
-    return {
-        "animal": req.animal,
-        "age": req.age,
-        "goal": req.goal,
-        "ration": base,
-        "note": "AI optimized ration (industrial v1)"
-    }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
