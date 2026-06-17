@@ -8,14 +8,16 @@ from database import SessionLocal, engine
 from models import Base, AIHistory
 
 # ---------------- INIT DB ----------------
+
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="Farm AI Industrial System",
-    version="2.0.0"
+    version="2.1.0"
 )
 
 # ---------------- CORS ----------------
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -25,6 +27,7 @@ app.add_middleware(
 )
 
 # ---------------- REQUEST MODEL ----------------
+
 class FeedRequest(BaseModel):
     animal: str
     age: int
@@ -32,6 +35,7 @@ class FeedRequest(BaseModel):
     available: Optional[List[str]] = []
 
 # ---------------- ROOT ----------------
+
 @app.get("/")
 def root():
     return {
@@ -39,9 +43,11 @@ def root():
         "message": "Industrial AI SaaS API Running"
     }
 
-# ---------------- AI ENGINE (SAVE TO DB) ----------------
+# ---------------- AI OPTIMIZATION ----------------
+
 @app.post("/ai/optimize-ration")
 def optimize_ration(req: FeedRequest):
+
     db = SessionLocal()
 
     try:
@@ -65,7 +71,6 @@ def optimize_ration(req: FeedRequest):
             "timestamp": datetime.utcnow().isoformat()
         }
 
-        # ---------------- SAVE TO DB ----------------
         record = AIHistory(
             animal=req.animal,
             goal=req.goal,
@@ -80,18 +85,27 @@ def optimize_ration(req: FeedRequest):
         return result
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
 
     finally:
         db.close()
 
-# ---------------- HISTORY (REAL DB) ----------------
+# ---------------- AI HISTORY ----------------
+
 @app.get("/ai/history")
 def get_history():
+
     db = SessionLocal()
 
     try:
-        records = db.query(AIHistory).order_by(AIHistory.id.desc()).all()
+        records = (
+            db.query(AIHistory)
+            .order_by(AIHistory.id.desc())
+            .all()
+        )
 
         return {
             "count": len(records),
@@ -107,6 +121,41 @@ def get_history():
                 for r in records
             ]
         }
+
+    finally:
+        db.close()
+
+# ---------------- DASHBOARD STATS ----------------
+
+@app.get("/dashboard/stats")
+def dashboard_stats():
+
+    db = SessionLocal()
+
+    try:
+        records = db.query(AIHistory).all()
+
+        total_requests = len(records)
+
+        average_score = 0
+
+        if total_requests > 0:
+            average_score = (
+                sum(r.score for r in records)
+                / total_requests
+            )
+
+        return {
+            "total_requests": total_requests,
+            "average_score": round(average_score, 1),
+            "active_farms": 12
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
 
     finally:
         db.close()
